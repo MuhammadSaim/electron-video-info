@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Main window</title>
+  <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="container mt-2">
+    <div class="row">
+      <div class="col-md-12 text-center">
+        <h1>Get your Video Info</h1>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            Select Video
+          </div>
+          <div class="card-body">
+            <form>
+              <div class="form-group">
+                <div class="custom-file">
+                  <input accept="video/*" type="file" class="custom-file-input" id="video-file" name="video-file">
+                  <label class="custom-file-label" for="video-file">Choose file</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <button class="btn btn-primary">GET INFO</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container mt-3" id="results"></div>
+</body>
+<script>
+  const electron = require('electron');
+  const videoHelpers = require('../helpers/video-helpers');
+
+  const { ipcRenderer } = electron;
+
+  document.querySelector('form').addEventListener('submit', function(e){
+    e.preventDefault();
+    const { path } = document.querySelector('input').files[0];
+    ipcRenderer.send('video:submit', path);
+    var result = document.getElementById("results");
+    ipcRenderer.on('video:metadata', (event, metadata) => {
+      console.log(metadata);
+      result.innerHTML = `
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-4"><b>Format</b></div>
+                            <div class="col-md-8">${ metadata.format.format_long_name }</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-4"><b>Codec</b></div>
+                            <div class="col-md-8">${ metadata.streams[0].codec_name.toUpperCase() }</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-4"><b>Frame rate</b></div>
+                            <div class="col-md-8">${ metadata.streams[0].avg_frame_rate }</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-4"><b>Bit rate</b></div>
+                            <div class="col-md-8">${ metadata.streams[0].bit_rate }</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-4"><b>Duration</b></div>
+                            <div class="col-md-8">${ parseFloat(Math.round((metadata.format.duration / 60) * 100) / 100).toFixed(2) } Mins</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-4"><b>Size</b></div>
+                            <div class="col-md-8">${ videoHelpers.getVideoSize(metadata.format.size) }</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-4"><b>Width, Height</b></div>
+                            <div class="col-md-8">${ metadata.streams[0].coded_width }x${ metadata.streams[0].coded_height }</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+      `;
+    });
+  });
+</script>
+</html>
